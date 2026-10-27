@@ -31,11 +31,10 @@ public final class SiteClient {
     public void refresh() {
         String base = base();
         if (base.isEmpty()) return;
-        // /api/public/news -> haberler + duyurular (news API'si her ikisini de dondurur)
         List<Entry> allNews = read(base + "/api/public/news", "title", "category");
         haberler  = allNews;
         duyurular = read(base + "/api/public/announcements", "title", "category");
-        if (duyurular.isEmpty()) duyurular = allNews; // fallback
+        if (duyurular.isEmpty()) duyurular = allNews;
         oneriler   = read(base + "/api/public/suggestions", "title", "votes");
         guncelleme = read(base + "/api/public/changelog",   "title", "version");
         market     = read(base + "/api/public/shop",        "name",  "price");

@@ -27,10 +27,8 @@ public final class FyConnectPlugin extends JavaPlugin {
         }
 
         SiteCommand command = new SiteCommand(this);
-        // Ana komut ve kisayollar
         getCommand("site").setExecutor(command);
         getCommand("site").setTabCompleter(command);
-        // Dogrudan alt menu komutlari
         getCommand("market").setExecutor(command);
         getCommand("haberler").setExecutor(command);
         getCommand("duyurular").setExecutor(command);
@@ -38,13 +36,12 @@ public final class FyConnectPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new JoinListener(this), this);
 
         long ticks = Math.max(20L, getConfig().getLong("sync-interval-seconds", 120) * 20L);
-        syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, site::refresh, 40L, ticks).getTaskId();
+        syncTask = PlatformUtil.runAsyncTimer(this, site::refresh, 40L, ticks);
 
         getLogger().info("FyConnect hazir. Port " + api.port() + " dinleniyor.");
         getLogger().info("API Key: " + getConfig().getString("api-key"));
     }
 
-    /** İlk acilista api-key yoksa otomatik uretir ve config.yml'e kaydeder. */
     private void ensureApiKey() {
         String current = getConfig().getString("api-key", "");
         if (current == null || current.isBlank() || current.equals("BURAYA_GIZLI_ANAHTARINIZI_YAZIN")) {
@@ -57,7 +54,8 @@ public final class FyConnectPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (syncTask != -1) Bukkit.getScheduler().cancelTask(syncTask);
+        PlatformUtil.cancel(syncTask);
+        PlatformUtil.cancelAll(this);
         if (api != null) api.stop();
     }
 

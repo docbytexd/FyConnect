@@ -1,7 +1,8 @@
 name: FyConnect
 version: '${project.version}'
 main: net.areofy.fyconnect.FyConnectPlugin
-api-version: '1.21'
+api-version: '1.20'
+folia-supported: true
 author: Areofy
 description: Areofy Web CMS ile Minecraft sunucusunu baglar. Market teslimati, haberler, duyurular ve site menusu.
 website: https://areofy.net

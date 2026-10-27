@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 public final class HttpApiServer {
 
@@ -21,67 +22,82 @@ public final class HttpApiServer {
 
     public void start() throws IOException {
         int port = plugin.getConfig().getInt("port", 4580);
-        server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/ping", this::ping);
+        server = HttpServer.create(new InetSocketAddress(port), 10);
+        server.createContext("/ping",    this::ping);
         server.createContext("/command", this::command);
-        server.setExecutor(null);
+        server.setExecutor(Executors.newFixedThreadPool(2, r -> {
+            Thread t = new Thread(r, "FyConnect-HTTP");
+            t.setDaemon(true);
+            return t;
+        }));
         server.start();
     }
 
     public void stop() {
-        if (server != null) server.stop(0);
+        if (server != null) server.stop(1);
     }
 
     public int port() {
         return plugin.getConfig().getInt("port", 4580);
     }
 
-    private void ping(HttpExchange exchange) throws IOException {
-        if (!authorized(exchange)) return;
-        reply(exchange, 200, Map.of(
-                "ok", true,
-                "plugin", "FyConnect",
-                "online", Bukkit.getOnlinePlayers().size()
+    private void ping(HttpExchange ex) throws IOException {
+        if (!authorized(ex)) return;
+        reply(ex, 200, Map.of(
+            "ok",       true,
+            "plugin",   "FyConnect",
+            "version",  plugin.getDescription().getVersion(),
+            "platform", PlatformUtil.isFolia() ? "Folia" : "Paper/Spigot",
+            "online",   Bukkit.getOnlinePlayers().size()
         ));
     }
 
-    private void command(HttpExchange exchange) throws IOException {
-        if (!authorized(exchange)) return;
-        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-            reply(exchange, 405, Map.of("ok", false, "message", "POST gerekli."));
+    private void command(HttpExchange ex) throws IOException {
+        if (!authorized(ex)) return;
+        if (!"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            reply(ex, 405, Map.of("ok", false, "message", "POST gerekli."));
             return;
         }
-        String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        String command = Json.readString(body, "command");
-        if (command == null || command.isBlank()) {
-            reply(exchange, 400, Map.of("ok", false, "message", "Komut bos."));
+        String body   = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String cmd    = Json.readString(body, "command");
+        if (cmd == null || cmd.isBlank()) {
+            reply(ex, 400, Map.of("ok", false, "message", "Komut bos."));
             return;
         }
-        String clean = command.startsWith("/") ? command.substring(1) : command;
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), clean);
-            if (!ok && plugin.getConfig().getBoolean("queue-offline-commands", true)) {
-                plugin.queue().add(clean);
+        final String clean  = cmd.startsWith("/") ? cmd.substring(1) : cmd;
+        final String player = Json.readString(body, "player");
+        reply(ex, 200, Map.of("ok", true, "message", "Komut alindi."));
+        PlatformUtil.runSync(plugin, () -> {
+            boolean queued = false;
+            if (player != null && !player.isBlank()
+                    && plugin.getConfig().getBoolean("queue-offline-commands", true)) {
+                if (Bukkit.getPlayerExact(player) == null) {
+                    plugin.queue().add(player, clean);
+                    queued = true;
+                }
+            }
+            if (!queued) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), clean);
             }
         });
-        reply(exchange, 200, Map.of("ok", true, "message", "Komut alindi."));
     }
 
-    private boolean authorized(HttpExchange exchange) throws IOException {
+    private boolean authorized(HttpExchange ex) throws IOException {
         String expected = plugin.getConfig().getString("api-key", "");
-        String given = exchange.getRequestHeaders().getFirst("x-api-key");
+        String given    = ex.getRequestHeaders().getFirst("x-api-key");
         if (expected.isBlank() || !expected.equals(given)) {
-            reply(exchange, 401, Map.of("ok", false, "message", "Yetkisiz."));
+            reply(ex, 401, Map.of("ok", false, "message", "Yetkisiz."));
             return false;
         }
         return true;
     }
 
-    private void reply(HttpExchange exchange, int status, Map<String, ?> body) throws IOException {
+    private void reply(HttpExchange ex, int status, Map<String, ?> body) throws IOException {
         byte[] bytes = Json.obj(body).getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
-        exchange.sendResponseHeaders(status, bytes.length);
-        try (OutputStream out = exchange.getResponseBody()) {
+        ex.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+        ex.getResponseHeaders().set("Connection",   "close");
+        ex.sendResponseHeaders(status, bytes.length);
+        try (OutputStream out = ex.getResponseBody()) {
             out.write(bytes);
         }
     }

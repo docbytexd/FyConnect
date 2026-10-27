@@ -1,5 +1,6 @@
 net\areofy\fyconnect\FyConnectPlugin.class
 net\areofy\fyconnect\MenuListener.class
+net\areofy\fyconnect\PlatformUtil.class
 net\areofy\fyconnect\SiteClient$Entry.class
 net\areofy\fyconnect\Text.class
 net\areofy\fyconnect\HttpApiServer.class

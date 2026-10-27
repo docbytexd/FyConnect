@@ -21,14 +21,20 @@ public final class SiteCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("fyconnect.admin")) { sender.sendMessage(Text.component(msg("messages.no-permission"))); return true; }
+            if (!sender.hasPermission("fyconnect.admin")) {
+                sender.sendMessage(Text.component(msg("messages.no-permission")));
+                return true;
+            }
             plugin.reloadConfig();
             sender.sendMessage(Text.component(msg("messages.reloaded")));
             return true;
         }
         if (args.length > 0 && args[0].equalsIgnoreCase("sync")) {
-            if (!sender.hasPermission("fyconnect.admin")) { sender.sendMessage(Text.component(msg("messages.no-permission"))); return true; }
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            if (!sender.hasPermission("fyconnect.admin")) {
+                sender.sendMessage(Text.component(msg("messages.no-permission")));
+                return true;
+            }
+            PlatformUtil.runAsync(plugin, () -> {
                 plugin.site().refresh();
                 sender.sendMessage(Text.component(msg("messages.sync-ok")));
             });
@@ -48,17 +54,17 @@ public final class SiteCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    public boolean owns(String plainTitle) {
-        return matches(plainTitle, "messages.menu-title")
-                || matches(plainTitle, "messages.market-title")
-                || matches(plainTitle, "messages.haberler-title")
-                || matches(plainTitle, "messages.duyurular-title")
-                || matches(plainTitle, "messages.oneriler-title")
-                || matches(plainTitle, "messages.guncelleme-title");
+    public boolean owns(String legacyTitle) {
+        return matches(legacyTitle, "messages.menu-title")
+                || matches(legacyTitle, "messages.market-title")
+                || matches(legacyTitle, "messages.haberler-title")
+                || matches(legacyTitle, "messages.duyurular-title")
+                || matches(legacyTitle, "messages.oneriler-title")
+                || matches(legacyTitle, "messages.guncelleme-title");
     }
 
-    public void click(Player player, String plainTitle, int slot) {
-        if (matches(plainTitle, "messages.menu-title")) {
+    public void click(Player player, String legacyTitle, int slot) {
+        if (matches(legacyTitle, "messages.menu-title")) {
             String which = switch (slot) {
                 case 10 -> Menus.MARKET;
                 case 12 -> Menus.HABERLER;
@@ -73,14 +79,15 @@ public final class SiteCommand implements CommandExecutor, TabCompleter {
         if (slot == 49) menus.openMain(player);
     }
 
-    private boolean matches(String plain, String key) {
-        String expected = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                .plainText().serialize(Text.component(plugin.getConfig().getString(key, "")));
-        return plain.equals(expected);
+    private boolean matches(String legacyTitle, String key) {
+        if (legacyTitle == null) return false;
+        String expected = Text.color(plugin.getConfig().getString(key, ""));
+        return legacyTitle.equals(expected);
     }
 
     private String msg(String key) {
-        return plugin.getConfig().getString("messages.prefix", "") + plugin.getConfig().getString(key, "");
+        return plugin.getConfig().getString("messages.prefix", "")
+             + plugin.getConfig().getString(key, "");
     }
 
     @Override
