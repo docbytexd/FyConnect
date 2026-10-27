@@ -1,19 +1,17 @@
-﻿# FyConnect
+# FyConnect
 
-**Areofy Web CMS ↔ Minecraft Paper eklentisi**
+**Areofy Web CMS ↔ Minecraft eklentisi**
 
 FyConnect, [Areofy Web CMS](https://areofy.net) kullanan her Minecraft sunucusunun web sitesiyle entegre olmasını sağlar. Market ürün teslimati, haberler, duyurular, oyuncu önerileri ve güncelleme notları doğrudan oyun içinden erişilebilir hale gelir.
 
 ---
-
-**Docbytexd Tarafından Yapıldı**
 
 ## Özellikler
 
 | Özellik | Açıklama |
 |---|---|
 | 🛒 Market teslimati | Siteden yapılan alışverişlerin komutları otomatik çalıştırılır |
-| 📦 Çevrimdışı kuyruk | Oyuncu sunucuda değilse komut sıraya alınır, girişte teslim edilir |
+| 📦 Per-player çevrimdışı kuyruk | Oyuncu sunucuda değilse komut sadece o oyuncuya ait sıraya alınır, girişte teslim edilir |
 | 📰 Haberler | Sitenizdeki son haberler oyun içi menüde görüntülenir |
 | 📢 Duyurular | Resmi duyurular envanter menüsünde listelenir |
 | 💡 Öneriler | Oyuncuların site önerileri menüden görüntülenebilir |
@@ -24,8 +22,8 @@ FyConnect, [Areofy Web CMS](https://areofy.net) kullanan her Minecraft sunucusun
 
 ## Gereksinimler
 
-- **Paper** 1.21 veya üstü
-- **Java** 21 veya üstü
+- **Paper / Spigot / Purpur / Folia** 1.20.x veya üstü
+- **Java** 17 veya üstü
 - **Areofy Web CMS** kurulu ve erişilebilir bir site
 
 ---
@@ -40,9 +38,9 @@ FyConnect, [Areofy Web CMS](https://areofy.net) kullanan her Minecraft sunucusun
    [FyConnect] FyConnect hazir. Port 4580 dinleniyor.
    [FyConnect] API Key: abc123...
    ```
-4. `config.yml` dosyasını düzenleyin:
+4. `config.yml` dosyasını açın ve `site-url` değerini güncelleyin:
    ```yaml
-   site-url: "https://siteniz.com"   # Web CMS adresiniz
+   site-url: "https://siteniz.com"
    ```
 5. Güvenlik duvarınızda `4580` portuna panelin IP adresinden erişim izni verin.
 
@@ -58,7 +56,10 @@ Panel → **Entegrasyonlar** → **Oyun İçi Eklentiler** → **Sunucu Ekle**
 | API URL | `http://SUNUCU_IP:4580` |
 | API Key | `config.yml` içindeki `api-key` değeri |
 
-Bağlantıyı test etmek için **Ping** butonunu kullanın. `{"ok":true,"plugin":"FyConnect"}` yanıtı geliyorsa kurulum tamamdır.
+Bağlantıyı test etmek için **Ping** butonunu kullanın. Aşağıdaki yanıt geliyorsa kurulum tamamdır:
+```json
+{ "ok": true, "plugin": "FyConnect", "platform": "Paper/Spigot", "online": 0 }
+```
 
 ---
 
@@ -77,25 +78,15 @@ Alternatif komutlar: `/web`, `/fyconnect`
 
 ---
 
-## config.yml Açıklaması
+## config.yml
 
 ```yaml
-# HTTP API portu — güvenlik duvarında bu porta panelin IP'sinden izin verin
 port: 4580
-
-# API anahtarı — ilk açılışta otomatik oluşturulur, değiştirmeye gerek yok
 api-key: ""
-
-# Web CMS adresiniz (Areofy Web CMS kullanan her site için geçerlidir)
 site-url: "https://siteniz.com"
-
-# Çevrimdışı oyuncuların komutlarını sıraya al, girişte teslim et
 queue-offline-commands: true
-
-# İçerik güncelleme sıklığı (saniye)
 sync-interval-seconds: 120
 
-# Ana menüde hangi bölümler görünsün
 menu:
   market: true
   haberler: true
@@ -104,10 +95,20 @@ menu:
   guncelleme: true
 
 messages:
-  # Komut öneki — sunucu adınızla değiştirin
   prefix: "&6Web &8» &r"
-  menu-title: "&8Site Menüsü"
-  # ... diğer mesajlar config.yml içinde özelleştirilebilir
+  menu-title: "&8Site Menusu"
+  market-title: "&8Market"
+  haberler-title: "&8Haberler"
+  duyurular-title: "&8Duyurular"
+  oneriler-title: "&8Oneriler"
+  guncelleme-title: "&8Guncelleme Notlari"
+  no-permission: "&cBu komutu kullanma yetkin yok."
+  reloaded: "&aFyConnect ayarlari yenilendi."
+  sync-ok: "&aSiteden icerik basariyla guncellendi."
+  sync-fail: "&cSiteye ulasilamadi, tekrar dene."
+  delivered: "&aSatin aldigin &e{product} &ahesabina eklendi."
+  pending-delivered: "&aCevrimdisiyken aldigin &e{count} &aurun hesabina teslim edildi."
+  empty: "&7Burada henuz icerik yok."
 ```
 
 ---
@@ -117,49 +118,61 @@ messages:
 1. Oyuncu siteden ürün satın alır.
 2. Panel, `POST http://SUNUCU_IP:4580/command` isteği gönderir:
    ```json
-   { "command": "give SteveOyuncu diamond 64" }
+   { "command": "give Steve diamond 64", "player": "Steve" }
    ```
    Header: `x-api-key: <api-key>`
-3. Eklenti komutu konsol üzerinden çalıştırır.
-4. Oyuncu çevrimdışıysa komut `plugins/FyConnect/queue.yml` dosyasına kaydedilir.
-5. Oyuncu sunucuya girdiğinde kuyruk otomatik işlenir ve oyuncuya bilgi mesajı gönderilir.
+3. Eklenti `player` alanını okur ve oyuncunun online olup olmadığını kontrol eder.
+4. Oyuncu **online** → komut anında çalışır.
+5. Oyuncu **çevrimdışı** → komut `plugins/FyConnect/queue.yml` dosyasına o oyuncuya özel kaydedilir.
+6. Oyuncu sunucuya girdiğinde **sadece kendi komutları** çalışır ve bilgi mesajı gönderilir.
 
 ---
 
 ## HTTP API Referansı
 
 ### `GET /ping`
-Bağlantı testi. Header: `x-api-key: <key>`
+Header: `x-api-key: <key>`
 
-**Yanıt:**
 ```json
-{ "ok": true, "plugin": "FyConnect", "online": 12 }
+{
+  "ok": true,
+  "plugin": "FyConnect",
+  "version": "1.0.0",
+  "platform": "Paper/Spigot",
+  "online": 12
+}
 ```
 
 ### `POST /command`
-Komut çalıştır. Header: `x-api-key: <key>`, `Content-Type: application/json`
+Header: `x-api-key: <key>`, `Content-Type: application/json`
 
-**İstek:**
 ```json
-{ "command": "eco give SteveOyuncu 100" }
+{ "command": "eco give Steve 1000", "player": "Steve" }
 ```
 
-**Yanıt:**
+`player` alanı opsiyoneldir. Belirtilirse çevrimdışı kontrolü yapılır. Belirtilmezse komut anında çalışır.
+
 ```json
 { "ok": true, "message": "Komut alindi." }
 ```
 
 ---
 
+## Birden Fazla Sunucu
+
+Her sunucuya ayrı JAR kopyalanır. Her sunucu ilk açılışta kendi API anahtarını üretir. Farklı makinelerde aynı port kullanılabilir; aynı makinede her sunucu için `config.yml`'de farklı `port` değeri ayarlanmalıdır.
+
+---
+
 ## Derleme (Kaynak Koddan)
 
 ```bash
-# Gereksinimler: JDK 21+, Maven 3.8+
 git clone https://github.com/areofy/fyconnect
 cd fyconnect
 mvn package
-# Çıktı: target/FyConnect-1.0.0.jar
 ```
+
+Çıktı: `target/FyConnect-1.0.0.jar` — Gereksinimler: JDK 17+, Maven 3.8+
 
 ---
 
@@ -167,10 +180,10 @@ mvn package
 
 | Platform | Durum |
 |---|---|
-| Paper 1.21.x | ✅ Tam uyumlu |
-| Paper 1.20.x | ⚠️ Test edilmedi |
-| Spigot | ❌ Desteklenmiyor |
-| Folia | ❌ Desteklenmiyor |
+| Paper 1.20.x – 1.21.x | ✅ Tam uyumlu |
+| Spigot 1.20.x – 1.21.x | ✅ Destekleniyor |
+| Purpur 1.20.x – 1.21.x | ✅ Destekleniyor |
+| Folia 1.20.x – 1.21.x | ✅ Destekleniyor |
 
 ---
 
