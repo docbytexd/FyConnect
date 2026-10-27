@@ -1,0 +1,11 @@
+net\areofy\fyconnect\FyConnectPlugin.class
+net\areofy\fyconnect\MenuListener.class
+net\areofy\fyconnect\SiteClient$Entry.class
+net\areofy\fyconnect\Text.class
+net\areofy\fyconnect\HttpApiServer.class
+net\areofy\fyconnect\Json.class
+net\areofy\fyconnect\JoinListener.class
+net\areofy\fyconnect\Menus.class
+net\areofy\fyconnect\SiteClient.class
+net\areofy\fyconnect\SiteCommand.class
+net\areofy\fyconnect\CommandQueue.class

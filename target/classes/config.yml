@@ -1,0 +1,51 @@
+# -------------------------------------------------------
+#  FyConnect - Areofy Web CMS <-> Minecraft Koprusu
+#  Dokumantasyon: https://areofy.net/docs/fyconnect
+# -------------------------------------------------------
+
+# HTTP API portu. Guvenlih duvarina bu porttan panelin IP'sine izin ver.
+port: 4580
+
+# API anahtari. Ilk acilista otomatik olusturulur ve asagiya yazilir.
+# Degistirmek istersen sunucuyu durdur, buraya yeni bir deger yaz, kaydet, baslat.
+api-key: ""
+
+# Web CMS adresin. Haber, duyuru, oneri, guncelleme notu ve market buradan cekilir.
+# Areofy Web CMS kullanan her site icin gecerlidir.
+site-url: "https://siteniz.com"
+
+# Satin alinan urunlerin komutlari konsoldan calistirilir.
+# Oyuncu o an cevrimdisiyse kuyruga alinir, sunucuya girdiginde teslim edilir.
+queue-offline-commands: true
+
+# Kac saniyede bir siteden icerik guncellenmesi yapilsin (saniye)
+sync-interval-seconds: 120
+
+# /site komutuyla acilan ana menude hangi bolumler gorunsun
+menu:
+  market: true
+  haberler: true
+  duyurular: true
+  oneriler: true
+  guncelleme: true
+
+messages:
+  # Komut oneki — sunucu adinizla degistirin
+  prefix: "&6Web &8» &r"
+
+  # Envanter baslik metinleri
+  menu-title: "&8Site Menusu"
+  market-title: "&8Market"
+  haberler-title: "&8Haberler"
+  duyurular-title: "&8Duyurular"
+  oneriler-title: "&8Oneriler"
+  guncelleme-title: "&8Guncelleme Notlari"
+
+  # Diger mesajlar
+  no-permission: "&cBu komutu kullanma yetkin yok."
+  reloaded: "&aFyConnect ayarlari yenilendi."
+  sync-ok: "&aSiteden icerik basariyla guncellendi."
+  sync-fail: "&cSiteye ulasilamadi, tekrar dene."
+  delivered: "&aSatin aldigin &e{product} &ahesabina eklendi."
+  pending-delivered: "&aCevrimdisiyken aldigin &e{count} &aurun hesabina teslim edildi."
+  empty: "&7Burada henuz icerik yok."

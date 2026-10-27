@@ -1,0 +1,25 @@
+name: FyConnect
+version: '${project.version}'
+main: net.areofy.fyconnect.FyConnectPlugin
+api-version: '1.21'
+author: Areofy
+description: Areofy Web CMS ile Minecraft sunucusunu baglar. Market teslimati, haberler, duyurular ve site menusu.
+website: https://areofy.net
+commands:
+  site:
+    description: Web CMS site menusu
+    usage: /site [reload|sync]
+    aliases: [web, market, fyconnect]
+  market:
+    description: Site marketini ac
+    usage: /market
+  haberler:
+    description: Site haberlerini goster
+    usage: /haberler
+  duyurular:
+    description: Site duyurularini goster
+    usage: /duyurular
+permissions:
+  fyconnect.admin:
+    description: FyConnect yonetim komutlari (reload, sync)
+    default: op
